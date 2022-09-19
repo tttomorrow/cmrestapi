@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @Title: CMRestAPIServer
@@ -87,6 +88,23 @@ public class CMRestAPIServer {
     }
 
     /**
+     * @Title: DefResStatus
+     * @author: xuemengen
+     * @Description: Defined Resource State
+     * Created on: 2022/09/19
+     */
+    class DefResStatus {
+        int nodeId;
+        String resName;
+        String state;
+        public DefResStatus(int nodeId, String state, String resName) {
+             this.nodeId = nodeId;
+             this.state = state;
+             this.resName = resName;
+        }
+    }
+
+    /**
      * @Title: ClusterStatus
      * @author: xuemengen
      * @Description:
@@ -95,7 +113,8 @@ public class CMRestAPIServer {
      */
     class ClusterStatus {
         String clusterState;
-        ArrayList<NodeStatus> nodesStatus;
+        List<NodeStatus> nodesStatus;
+        List<DefResStatus> defResStatus;
     }
     
     @PreDestroy
@@ -198,12 +217,31 @@ public class CMRestAPIServer {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(msg);
         }
-        String[] nodesStatus = cmdResult.resultString.split("\\s+-+\\s+");
-        String clusterState = CMRestAPI.matchRegex("cluster_state.*: (.*)\\s+", nodesStatus[0]);
         ClusterStatus clusterStatus = new ClusterStatus();
+        String[] nodesStatus = cmdResult.resultString.split("\\s+-{70,}\\s+");
+        int startPos = 0;
+        if (nodesStatus[0].contains("Defined Resource State")) {
+            startPos = 1;
+            // get defined resource state
+            clusterStatus.defResStatus = new ArrayList<DefResStatus>();
+            String defResStatusString = nodesStatus[0].split("\\s+-+\\s+")[1];
+            String[] resStateList = defResStatusString.split("\\r?\\n");
+            for (String resState : resStateList) {
+                if (!resState.trim().isEmpty()) {
+                    String[] items = resState.split("\\s+");
+                    int nodeId = Integer.parseInt(items[0]);
+                    String resName = items[2];
+                    String state = items[4];
+                    clusterStatus.defResStatus.add(new DefResStatus(nodeId, state, resName));
+                }
+            }
+        } else {
+            clusterStatus.defResStatus = null;
+        }
+        String clusterState = CMRestAPI.matchRegex("cluster_state.*: (.*)\\s+", nodesStatus[startPos]);
         clusterStatus.clusterState = clusterState;
         clusterStatus.nodesStatus = new ArrayList<NodeStatus>();
-        for(int i = 1; i < nodesStatus.length; ++i) {
+        for(int i = startPos + 1; i < nodesStatus.length; ++i) {
             if (nodesStatus[i] != null && !nodesStatus[i].trim().isEmpty()) {
                 String nodeIp = CMRestAPI.matchRegex("node_ip.*: (.*)\\s+", nodesStatus[i]);
                 String cmServerState = CMRestAPI.matchRegex("type.*CMServer\\s+instance_state.*: (.*)\\s+", nodesStatus[i]);

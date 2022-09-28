@@ -15,6 +15,7 @@
 package com.application.applicationdemo;
 
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,18 +36,25 @@ public class ApplicationServer {
      * @return
      * boolean
      */
-    @PutMapping("/CMRestAPI")
-    public boolean receiveMasterAndStandbyInfo(
-            @RequestParam(value = "MasterIpPort", required = false, defaultValue = "")String masterIpPort,
-            @RequestParam(value = "StanbysInfo", required = false, defaultValue = "")String stanbysInfo) {
-        if (masterIpPort != null && !"".equals(masterIpPort)) {
+    @PutMapping("/CMRestAPI/MasterInfo")
+    public String receiveMasterInfo(@RequestBody String masterInfo) {
+        String result = "Recvieve master info is null.";
+        if (masterInfo != null && !"".equals(masterInfo)) {
             // handle master info
-            System.out.println("Received put master info request, current master info is " + masterIpPort);
+            System.out.println("Received put master info request, current master info is " + masterInfo);
+            result = "Recieved master info successfully.";
         }
-        if (stanbysInfo != null && !"".equals(stanbysInfo)) {
-            // handle standbys info
-            System.out.println("Received put standbys info request, current standbys info is " + stanbysInfo);
+        return result;
+    }
+
+    @PutMapping("/CMRestAPI/StandbyInfo")
+    public String receiveStandbyInfo(@RequestBody String stanbyInfo) {
+        String result = "Recvieve standby info is null.";
+        if (stanbyInfo != null && !"".equals(stanbyInfo)) {
+            // handle standby info
+            System.out.println("Received put standby info request, current standbys info is " + stanbyInfo);
+            result = "Recieved standby info successfully.";
         }
-        return true;
+        return result;
     }
 }

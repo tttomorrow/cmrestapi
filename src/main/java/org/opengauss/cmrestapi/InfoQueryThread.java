@@ -14,6 +14,8 @@
  */
 package org.opengauss.cmrestapi;
 
+import javax.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -35,11 +37,20 @@ public class InfoQueryThread implements Runnable {
     public InfoQueryThread() {
         THREAD_NAME = "InfoQueryThread";
     }
-    
+
+    class ThreadException implements Thread.UncaughtExceptionHandler {
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            logger.error("Error occured when web server start. \nDetail:{}" + e.getMessage());
+            System.exit(ErrorCode.EUNKNOWN.getCode());
+        }
+    }
+
     public void start() {
         logger.info("Starting thread {}", THREAD_NAME);
         if (thread == null) {
             thread = new Thread(this, THREAD_NAME);
+            thread.setUncaughtExceptionHandler(new ThreadException());
             thread.start ();
         }
     }
@@ -47,5 +58,10 @@ public class InfoQueryThread implements Runnable {
     @Override
     public void run() {
         SpringApplication.run(InfoQueryThread.class);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        logger.info("Destroying CMRestAPI.");
     }
 }

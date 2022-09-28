@@ -14,7 +14,6 @@
  */
 package org.opengauss.cmrestapi;
 
-import javax.annotation.PreDestroy;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,7 +51,7 @@ public class CMRestAPIServer {
     private final String SEPARATOR = ",";
     private Logger logger = LoggerFactory.getLogger(CMRestAPIServer.class);
     private OGCmdExecuter ogCmdExcuter = new OGCmdExecuter(CMRestAPI.envFile);
-    
+
     private static final String[] IP_HEADER_CANDIDATES = {
             "X-Forwarded-For",
             "Proxy-Client-IP",
@@ -115,11 +114,6 @@ public class CMRestAPIServer {
         String clusterState;
         List<NodeStatus> nodesStatus;
         List<DefResStatus> defResStatus;
-    }
-    
-    @PreDestroy
-    public void preDestroy() {
-        logger.info("Destroying CMRestAPI.");
     }
 
     private String getClientIp(HttpServletRequest request) {

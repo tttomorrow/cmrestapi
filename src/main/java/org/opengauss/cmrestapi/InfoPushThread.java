@@ -40,7 +40,7 @@ public class InfoPushThread implements Runnable {
     public void run() {
         CMRestAPIClient client = new CMRestAPIClient(recvAddrUrl);
         client.pushMasterInfo(masterIpPort);
-        client.pushStandbysInfo();
+        client.pushStandbysInfo(CMRestAPI.peerIpPorts);
     }
 
     /**

@@ -16,12 +16,13 @@ package org.opengauss.cmrestapi;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * @Title: CMRestAPIClient
@@ -32,14 +33,20 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
  */
 public class CMRestAPIClient {
     private String url;
-    private WebClient webClient;
+    private RestTemplate restTemplate = null;
     private Logger logger = LoggerFactory.getLogger(CMRestAPIClient.class);
-    
-    public CMRestAPIClient(String uri) {
-        this.url = uri;
-        this.webClient = WebClient.create(uri);
+
+    public CMRestAPIClient(String url) {
+        this.url = url;
+        SimpleClientHttpRequestFactory clientHttpRequestFactory = new SimpleClientHttpRequestFactory();
+        // set connect timeout = 1s
+        clientHttpRequestFactory.setConnectTimeout(1000);
+        // set sending timeout = 1s
+        clientHttpRequestFactory.setReadTimeout(1000);
+        restTemplate = new RestTemplate();
+        restTemplate.setRequestFactory(clientHttpRequestFactory);
     }
-    
+
     /**
      * @Title: pushMasterInfo
      * @Description:
@@ -47,48 +54,35 @@ public class CMRestAPIClient {
      * @param masterIpPort
      * void
      */
-    public void pushMasterInfo(String masterIpPort) {
-        logger.info("Sendind newest master info({}) to {}", masterIpPort, url);
-        MultiValueMap<String, String> bodyValues = new LinkedMultiValueMap<>();
-        bodyValues.add("MasterIpPort", masterIpPort);
-
+    public void pushMasterInfo(String masterInfo) {
+        logger.info("Sendind newest master info({}) to {}", masterInfo, url);
         try {
-            String response = webClient.put()
-                    .uri("")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromFormData(bodyValues))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-            logger.info("Receive response {} from server.", response);
-        } catch (WebClientRequestException e) {
-            logger.error("The server {} maybe offline.\nDetail:", url, e);
+            HttpEntity<String> entity = new HttpEntity<>(masterInfo);
+            ResponseEntity<String> response = restTemplate.exchange(url + "/MasterInfo", HttpMethod.PUT, entity, String.class);
+            logger.info("StatusCode: {}", response.getStatusCode());
+            logger.info("Msg: {}", response.getBody());
+        } catch (ResourceAccessException | HttpClientErrorException e) {
+            logger.error("Failed to send newest master info.\nDetail:{}", url, e.getMessage());
         }
+        logger.info("Send newest master info successfully.");
     }
-    
+
     /**
      * @Title: pushStandbysInfo
      * @Description:
      * Push current standbys' info(ip:port) to url.
      * void
      */
-    public void pushStandbysInfo() {
-        String standbysInfo = CMRestAPI.peerIpPorts;
-        logger.info("Sendind newest standbys info({}) to {}", standbysInfo, url);
-        MultiValueMap<String, String> bodyValues = new LinkedMultiValueMap<>();
-        bodyValues.add("StanbysInfo", standbysInfo);
-
+    public void pushStandbysInfo(String standbyInfo) {
+        logger.info("Sendind newest standby info({}) to {}", standbyInfo, url);
         try {
-            String response = webClient.put()
-                    .uri("")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromFormData(bodyValues))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-            logger.info("Receive response {} from server.", response);
-        } catch (WebClientRequestException e) {
-            logger.error("The server {} maybe offline.\nDetail:", url, e.getMessage());
+            HttpEntity<String> entity = new HttpEntity<>(standbyInfo);
+            ResponseEntity<String> response = restTemplate.exchange(url + "/StandbyInfo", HttpMethod.PUT, entity, String.class);
+            logger.info("Response status code: {}", response.getStatusCode());
+            logger.info("Response msg: {}", response.getBody());
+        } catch (ResourceAccessException | HttpClientErrorException e) {
+            logger.error("Failed to send newest standby info.\nDetail:{}", url, e.getMessage());
         }
+        logger.info("Send newest standby info successfully.");
     }
 }

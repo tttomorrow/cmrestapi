@@ -1,0 +1,10 @@
+spring-boot-starter-web: 
+  cpeName: spring-boot-starter-web
+  groupId: org.springframework.boot
+  url:
+  version:
+gson: 
+  cpeName: gson
+  groupId: com.google.code.gson
+  url:
+  version: 2.9.0
